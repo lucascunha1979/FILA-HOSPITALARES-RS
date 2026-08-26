@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regulação Ambulatorial e Hospitalar — RS</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="carregando" class="carregando">
+  <div class="spinner"></div>
+  <div>Carregando dados do painel…</div>
+</div>
+
+<header class="topo">
+  <h1>Regulação Ambulatorial e Hospitalar — Rio Grande do Sul</h1>
+  <p class="sub">Painel público construído a partir dos dados abertos do painel de Transparência da Regulação (SES-RS)</p>
+  <div class="meta-extracao">
+    <span>Fila de espera extraída em: <b id="meta-data-fila">—</b></span>
+    <span>Painel gerado em: <b id="meta-data-geracao">—</b></span>
+    <span>Municípios cobertos: <b id="meta-n-municipios">—</b></span>
+    <span class="somente-impressao">Impresso em: <b id="impressao-data">—</b></span>
+  </div>
+</header>
+
+<nav class="abas">
+  <button class="ativa" data-secao="secao-fila">Fila de Espera</button>
+  <button data-secao="secao-populacao">População (2023–2025)</button>
+  <button data-secao="secao-sobre">Sobre os dados</button>
+</nav>
+
+<div class="barra-filtros" id="barra-filtros">
+  <div class="campo-filtro">
+    <label for="f-macrorregiao">Macrorregião de Saúde</label>
+    <select id="f-macrorregiao"><option value="">Todas</option></select>
+  </div>
+  <div class="campo-filtro">
+    <label for="f-regiao">Região de Saúde</label>
+    <select id="f-regiao"><option value="">Todas</option></select>
+  </div>
+  <div class="campo-filtro">
+    <label for="f-municipio">Município</label>
+    <input list="lista-municipios" id="f-municipio" placeholder="Digite ou selecione…" autocomplete="off">
+    <datalist id="lista-municipios"></datalist>
+  </div>
+  <button class="btn-limpar" id="btn-limpar-filtros">Limpar filtros</button>
+  <button class="btn-exportar" id="btn-exportar-pdf" title="Abre a caixa de impressão do navegador — escolha 'Salvar como PDF'">Exportar PDF</button>
+</div>
+
+<div class="filtro-atual-banner" id="filtro-atual-banner">Filtro atual: Estado inteiro (RS)</div>
+
+<main>
+
+  <!-- ===================== SEÇÃO FILA DE ESPERA ===================== -->
+  <section id="secao-fila" class="secao ativa">
+
+    <div class="grade-kpi">
+      <div class="cartao-kpi">
+        <div class="rotulo">Total na fila de espera</div>
+        <div class="valor" id="kpi-fila-total">—</div>
+        <div class="nota" id="kpi-fila-total-nota">todos os municípios</div>
+      </div>
+      <div class="cartao-kpi laranja">
+        <div class="rotulo">Fila de espera 60+</div>
+        <div class="valor" id="kpi-fila-60">—</div>
+        <div class="nota" id="kpi-fila-60-nota">% do total</div>
+      </div>
+      <div class="cartao-kpi verde">
+        <div class="rotulo">Municípios no filtro</div>
+        <div class="valor" id="kpi-fila-nmun">—</div>
+        <div class="nota">de 497 no RS</div>
+      </div>
+      <div class="cartao-kpi vermelho">
+        <div class="rotulo">Central com maior volume</div>
+        <div class="valor" id="kpi-fila-central" style="font-size:1.1rem">—</div>
+        <div class="nota">Estadual / Municipal / Regional</div>
+      </div>
+    </div>
+
+    <div class="grade-painel">
+      <div class="painel">
+        <h2>Mapa — fila de espera por município</h2>
+        <p class="painel-sub">Clique em um município para filtrar todo o painel · fundo OpenStreetMap</p>
+        <div class="painel-controles">
+          <select id="mapa-fila-metrica">
+            <option value="Total Geral da Lista de Espera">Total geral</option>
+            <option value="Total Geral da Lista de Espera 60+">Total 60+</option>
+            <option value="Total Centrais de Reg Estadual">Central Estadual</option>
+            <option value="Total Centrais de Reg Municipal">Central Municipal</option>
+            <option value="Total Centrais de Reg Regional">Central Regional</option>
+          </select>
+        </div>
+        <div id="mapa"></div>
+        <div class="legenda-mapa" id="legenda-mapa-fila"></div>
+      </div>
+
+      <div class="painel">
+        <h2>Maiores filas por município</h2>
+        <p class="painel-sub" id="ranking-mun-sub">Top municípios pelo filtro atual</p>
+        <div class="wrap-tabela">
+          <table class="tabela-mini" id="tabela-ranking-municipios">
+            <thead><tr><th data-col="nome">Município</th><th data-col="total">Total</th><th data-col="p60">60+</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grade-2col">
+      <div class="painel">
+        <div class="painel-titulo-linha">
+          <h2>Ranking por Especialidade Mãe</h2>
+          <div class="ferramentas-grafico" data-grafico="grafico-rank-especialidade" data-titulo="Ranking por Especialidade Mãe">
+            <button class="btn-icone btn-expandir-grafico" title="Expandir">⤢</button>
+            <button class="btn-icone btn-baixar-grafico" title="Baixar imagem (PNG)">⬇</button>
+          </div>
+        </div>
+        <p class="painel-sub" id="rank-esp-sub">Estado inteiro (selecione um município para detalhar) · todas as categorias, role para ver mais</p>
+        <div class="wrap-grafico-scroll"><canvas id="grafico-rank-especialidade"></canvas></div>
+      </div>
+      <div class="painel">
+        <div class="painel-titulo-linha">
+          <h2>Ranking por Sub Especialidade</h2>
+          <div class="ferramentas-grafico" data-grafico="grafico-rank-subespecialidade" data-titulo="Ranking por Sub Especialidade">
+            <button class="btn-icone btn-expandir-grafico" title="Expandir">⤢</button>
+            <button class="btn-icone btn-baixar-grafico" title="Baixar imagem (PNG)">⬇</button>
+          </div>
+        </div>
+        <p class="painel-sub" id="rank-sub-sub">Estado inteiro (selecione um município para detalhar) · todas as categorias, role para ver mais</p>
+        <div class="wrap-grafico-scroll"><canvas id="grafico-rank-subespecialidade"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grade-2col">
+      <div class="painel">
+        <div class="painel-titulo-linha">
+          <h2>Série histórica — Especialidade Mãe</h2>
+          <div class="ferramentas-grafico" data-grafico="grafico-historico-especialidade" data-titulo="Série histórica - Especialidade Mãe">
+            <button class="btn-icone btn-expandir-grafico" title="Expandir">⤢</button>
+            <button class="btn-icone btn-baixar-grafico" title="Baixar imagem (PNG)">⬇</button>
+          </div>
+        </div>
+        <p class="painel-sub">36 meses · não filtra por município (dado estadual) · linha tracejada = tendência (média móvel 3m)</p>
+        <div class="painel-controles">
+          <select id="hist-especialidade"></select>
+        </div>
+        <canvas id="grafico-historico-especialidade" height="260"></canvas>
+      </div>
+      <div class="painel">
+        <div class="painel-titulo-linha">
+          <h2>Série histórica — Central de Regulação</h2>
+          <div class="ferramentas-grafico" data-grafico="grafico-historico-central" data-titulo="Série histórica - Central de Regulação">
+            <button class="btn-icone btn-expandir-grafico" title="Expandir">⤢</button>
+            <button class="btn-icone btn-baixar-grafico" title="Baixar imagem (PNG)">⬇</button>
+          </div>
+        </div>
+        <p class="painel-sub">Estadual, Municipal, Regional e Total · 36 meses · dado estadual</p>
+        <canvas id="grafico-historico-central" height="260"></canvas>
+      </div>
+    </div>
+
+    <div class="painel" style="margin-bottom:16px">
+      <h2>Tempo mediano na lista de espera por sub especialidade</h2>
+      <p class="painel-sub">Em dias · dado estadual, não filtra por município · campos em branco = sem casos nessa faixa etária</p>
+      <div class="painel-controles">
+        <input type="text" id="busca-tempo-mediano" placeholder="Buscar sub especialidade…" style="min-width:260px">
+      </div>
+      <div class="wrap-tabela">
+        <table class="tabela-mini" id="tabela-tempo-mediano">
+          <thead><tr><th data-col="nome">Sub especialidade</th><th data-col="geral">Tempo mediano geral (dias)</th><th data-col="p60">Tempo mediano 60+ (dias)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===================== SEÇÃO POPULAÇÃO ===================== -->
+  <section id="secao-populacao" class="secao">
+
+    <div class="grade-kpi">
+      <div class="cartao-kpi">
+        <div class="rotulo">População 2025</div>
+        <div class="valor" id="kpi-pop-2025">—</div>
+        <div class="nota" id="kpi-pop-2025-nota">no filtro atual</div>
+      </div>
+      <div class="cartao-kpi verde">
+        <div class="rotulo">Crescimento 2023→2025</div>
+        <div class="valor" id="kpi-pop-cresc">—</div>
+        <div class="nota">variação percentual</div>
+      </div>
+      <div class="cartao-kpi laranja">
+        <div class="rotulo">Densidade média 2025</div>
+        <div class="valor" id="kpi-pop-densidade">—</div>
+        <div class="nota">habitantes / km²</div>
+      </div>
+      <div class="cartao-kpi">
+        <div class="rotulo">Área total</div>
+        <div class="valor" id="kpi-pop-area">—</div>
+        <div class="nota">km²</div>
+      </div>
+    </div>
+
+    <div class="grade-painel">
+      <div class="painel">
+        <h2>Mapa — população e crescimento</h2>
+        <p class="painel-sub">Fundo OpenStreetMap</p>
+        <div class="painel-controles">
+          <select id="mapa-pop-metrica">
+            <option value="pop_2025">População 2025</option>
+            <option value="crescimento_23_25_pct">Crescimento 2023→2025 (%)</option>
+            <option value="densidade_2025_hab_km2">Densidade 2025 (hab/km²)</option>
+          </select>
+        </div>
+        <div id="mapa-pop"></div>
+        <div class="legenda-mapa" id="legenda-mapa-pop"></div>
+      </div>
+      <div class="painel">
+        <h2>Municípios — maior variação populacional</h2>
+        <p class="painel-sub">2023 → 2025</p>
+        <div class="wrap-tabela">
+          <table class="tabela-mini" id="tabela-ranking-crescimento">
+            <thead><tr><th data-col="nome">Município</th><th data-col="pop">Pop. 2025</th><th data-col="cresc">Cresc. %</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grade-2col">
+      <div class="painel">
+        <div class="painel-titulo-linha">
+          <h2>População por região</h2>
+          <div class="ferramentas-grafico" data-grafico="grafico-pop-regiao" data-titulo="População por região">
+            <button class="btn-icone btn-expandir-grafico" title="Expandir">⤢</button>
+            <button class="btn-icone btn-baixar-grafico" title="Baixar imagem (PNG)">⬇</button>
+          </div>
+        </div>
+        <div class="painel-controles">
+          <select id="pop-agrupamento">
+            <option value="macrorregiao">Macrorregião de Saúde</option>
+            <option value="regiao">Região de Saúde</option>
+          </select>
+        </div>
+        <canvas id="grafico-pop-regiao" height="280"></canvas>
+      </div>
+      <div class="painel">
+        <div class="painel-titulo-linha">
+          <h2>Evolução populacional 2023–2025</h2>
+          <div class="ferramentas-grafico" data-grafico="grafico-pop-evolucao" data-titulo="Evolução populacional 2023-2025">
+            <button class="btn-icone btn-expandir-grafico" title="Expandir">⤢</button>
+            <button class="btn-icone btn-baixar-grafico" title="Baixar imagem (PNG)">⬇</button>
+          </div>
+        </div>
+        <p class="painel-sub">Por macrorregião · linha tracejada = tendência (total RS)</p>
+        <canvas id="grafico-pop-evolucao" height="280"></canvas>
+      </div>
+    </div>
+
+    <div class="grade-2col">
+      <div class="painel" style="grid-column:1 / -1">
+        <div class="painel-titulo-linha">
+          <h2>Taxa de crescimento populacional (por 1.000 habitantes)</h2>
+          <div class="ferramentas-grafico" data-grafico="grafico-taxa-crescimento" data-titulo="Taxa de crescimento populacional por 1.000 hab">
+            <button class="btn-icone btn-expandir-grafico" title="Expandir">⤢</button>
+            <button class="btn-icone btn-baixar-grafico" title="Baixar imagem (PNG)">⬇</button>
+          </div>
+        </div>
+        <p class="painel-sub">Taxa ‰ (por mil habitantes) · 2023→2024 e 2024→2025 · calculada a partir da população de cada período</p>
+        <div class="painel-controles">
+          <select id="taxa-agrupamento">
+            <option value="macrorregiao">Macrorregião de Saúde</option>
+            <option value="regiao">Região de Saúde</option>
+          </select>
+        </div>
+        <div class="wrap-grafico-scroll" style="max-height:480px"><canvas id="grafico-taxa-crescimento"></canvas></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===================== SEÇÃO SOBRE ===================== -->
+  <section id="secao-sobre" class="secao">
+    <div class="painel">
+      <h2>Sobre estes dados</h2>
+      <p>Este painel consolida dados públicos extraídos do painel oficial de Transparência da Regulação Ambulatorial e Hospitalar da Secretaria da Saúde do RS, disponível em
+        <a href="https://ti.saude.rs.gov.br/regulacao_transparencia/" target="_blank" rel="noopener">ti.saude.rs.gov.br/regulacao_transparencia</a>.
+      </p>
+      <p><b>Fila de espera:</b> foto extraída em <span id="sobre-data-fila">—</span>, cobrindo os 497 municípios do RS. Valores são <b>totais</b>; não há normalização por população para esta base, pois é uma fotografia de um único momento.</p>
+      <p><b>População:</b> dados de 2023, 2024 e 2025 por município, cruzados com regiões e macrorregiões de saúde. Para esta base são calculadas taxas de crescimento (em % e em ‰ / por 1.000 habitantes) e densidade demográfica.</p>
+      <p><b>Sub especialidades sem tempo mediano 60+:</b> campos em branco na tabela de tempo mediano indicam categorias sem pacientes nessa faixa etária (ex.: especialidades pediátricas), e não um erro de extração.</p>
+      <p><b>Séries históricas</b> (especialidade mãe e central de regulação) são estaduais e não respondem ao filtro de município, pois o próprio painel de origem trata esses gráficos como não sensíveis a filtro de localidade.</p>
+      <p><b>Exportar / imprimir:</b> o botão "Exportar PDF" abre a caixa de impressão do navegador (escolha "Salvar como PDF" no destino). O PDF gerado mostra, no topo, qual filtro estava ativo no momento da exportação. Cada gráfico também pode ser expandido (⤢) ou baixado individualmente como imagem PNG (⬇).</p>
+      <p style="color:var(--cinza-400);font-size:.82rem">Painel gerado em <span id="sobre-data-geracao">—</span>. Dados abertos, sem coleta de informação pessoal identificável.</p>
+    </div>
+  </section>
+
+</main>
+
+<div class="rodape">
+  Dados públicos SES-RS · painel independente, sem vínculo oficial com o governo do Estado
+</div>
+
+<div class="modal-grafico oculto" id="modal-grafico">
+  <div class="modal-grafico-conteudo">
+    <div class="modal-grafico-topo">
+      <h3 id="modal-grafico-titulo">Gráfico</h3>
+      <button class="modal-fechar" id="modal-grafico-fechar" title="Fechar">✕</button>
+    </div>
+    <div class="modal-grafico-corpo">
+      <canvas id="modal-grafico-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>window.L || document.write('<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"><\/script>')</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>window.Chart || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/4.4.4/chart.umd.min.js"><\/script>')</script>
+<script src="app.js"></script>
+</body>
+</html>
